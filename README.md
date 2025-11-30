@@ -5,4 +5,8 @@
 g++ hw1/hw1.cpp $(root-config --cflags --libs) -o hw1/hw1.bin
 ```
 Работает в fedora 43
+Для работы на кластере необходимо поправить подключения библиотек:
 
+```с++
+#include <root/TCanvas.h> -> #include <TCanvas.h>
+```
