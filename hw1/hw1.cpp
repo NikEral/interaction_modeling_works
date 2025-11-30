@@ -35,7 +35,6 @@ int main() {
     int bin8 = hist->FindBin(8.0);
     double integral = hist->Integral(bin4, bin8);
     
-    // Создание и настройка текста для отображения статистики
     TPaveText *stats = new TPaveText(0.7, 0.7, 1, 1, "NDC");
     stats->SetFillColor(0);
     stats->SetTextSize(0.03);

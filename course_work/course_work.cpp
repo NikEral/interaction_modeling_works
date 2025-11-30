@@ -25,7 +25,7 @@
 #include <vector>
 #include <cmath>
 using namespace std;
-#define ATTEMPTS 10000
+#define ATTEMPTS 1000
 // #define A 56
 // #define Z 26
 // #define N 30
@@ -40,7 +40,8 @@ using namespace std;
 #include <root/TH1F.h>
 #include <root/TRandom.h>
 #include <root/TMath.h>
-
+#include <root/TLegend.h>
+#include <root/TFile.h>
 class Nucleon {
 public:
     Int_t charge;
@@ -133,7 +134,25 @@ int main() {
     hist_overlap_n1->Draw("hist same");
     hist_overlap_n2->SetLineColor(kBlue);
     hist_overlap_n2->Draw("hist same");
-    canvas->Print("overlap_nucleons.png");
 
+    TF1 *fit_func = new TF1("fit_func", "[0]*TMath::Gaus(x, [1], [2]) + [3]*TMath::Gaus(x, [4], [5]) + [6]", 0, 112);
+    fit_func->SetParameters(160, 0, 5, 40, 100, 15, 10);
+    hist_total_overlap->Fit("fit_func", "Q");
+    fit_func->SetLineColor(kBlack);
+    fit_func->Draw("same");
+    TLegend* legend = new TLegend(0.3, 0.7, 0.9, 0.9);
+    // legend->AddEntry(hist_total_overlap, "Total Overlap Nucleons", "f");
+    // string function_desc = to_string(fit_func->GetParameter(0)) + "*TMath::Gaus(x, " + to_string(fit_func->GetParameter(1)) + 
+    //                             ", " + to_string(fit_func->GetParameter(2)) + ") + " +
+    //                             to_string(fit_func->GetParameter(3)) + "*TMath::Gaus(x, " + to_string(fit_func->GetParameter(4)) + 
+    //                             ", " + to_string(fit_func->GetParameter(5)) + ") + " +
+    //                             to_string(fit_func->GetParameter(6));
+    string function_desc = "[0]*TMath::Gaus(x, [1], [2]) +[3]*TMath::Gaus(x, [4], [5]) + [6]";
+    legend->AddEntry(fit_func, function_desc.c_str(), "l");
+    legend->Draw();
+    canvas->Print("course_work/overlap_nucleons.png");
+    TFile *file = new TFile("course_work/overlap_nucleous.root", "recreate");
+    hist_total_overlap->Write();
+    file->Close();
     return 0;
 }
