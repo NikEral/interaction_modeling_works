@@ -93,14 +93,17 @@ public:
     Ferrum(Double_t x = 0, Double_t y = 0, Double_t z = 0) : Nucleus(26, 56.0, 1.25, 51.0, 0.535, 0.0, 0.0, x, y, z) {}
 };
 int main() {
+    TCanvas* canvas = new TCanvas("canvas", "Nucleus Overlap", 800, 600);
+    TH1F* hist_overlap_n1 = new TH1F("hist_overlap_n1", "Overlap Nucleons Nucleus 1;Number of Overlap Nucleons;Counts", 30, 0, 56);
+    TH1F* hist_overlap_n2 = new TH1F("hist_overlap_n2", "Overlap Nucleons Nucleus 2;Number of Overlap Nucleons;Counts", 30, 0, 56);
+    TH1F* hist_total_overlap = new TH1F("hist_total_overlap", "Total Overlap Nucleons;Number of Overlap Nucleons;Counts", 60, 0, 112);
     const Double_t r0 = 1.25;
     const Double_t mass = 56.0;
     const Double_t R = r0 * pow(mass, 1.0/3.0);
     for(Int_t i = 0; i < ATTEMPTS; i++){
         Double_t distance = gRandom->Uniform(0, 2*R);
         Ferrum nucleus1;
-        Ferrum nucleus2;
-        nucleus2.position[0] = distance;
+        Ferrum nucleus2(distance, 0, 0);
         Int_t count_overlap_n1 = 0;
         for(auto n : nucleus1.nucleons){
         /*
@@ -112,6 +115,7 @@ int main() {
                 count_overlap_n1++;
             }
         }
+        hist_overlap_n1->Fill(count_overlap_n1);
         Int_t count_overlap_n2 = 0;
         for(auto n : nucleus2.nucleons){
             if(pow(n.position[0] - nucleus1.position[0], 2) +
@@ -120,7 +124,16 @@ int main() {
                 count_overlap_n2++;
             }
         }
+        hist_overlap_n2->Fill(count_overlap_n2);
+        hist_total_overlap->Fill(count_overlap_n1 + count_overlap_n2);
     }
+    hist_total_overlap->SetLineColor(kGreen);
+    hist_total_overlap->Draw("hist");
+    hist_overlap_n1->SetLineColor(kRed);
+    hist_overlap_n1->Draw("hist same");
+    hist_overlap_n2->SetLineColor(kBlue);
+    hist_overlap_n2->Draw("hist same");
+    canvas->Print("overlap_nucleons.png");
 
     return 0;
 }
