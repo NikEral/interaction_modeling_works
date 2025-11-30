@@ -25,65 +25,102 @@
 #include <vector>
 #include <cmath>
 using namespace std;
-
+#define ATTEMPTS 10000
 // #define A 56
 // #define Z 26
 // #define N 30
-// #define V0 51.0 /MeV
 // #define r0 1.25 /fm
+// #define V0 51.0 /MeV
 // #define a 0.535 /fm
 // #define beta2 0.0
 // #define beta4 0.0
 
+#include <root/TCanvas.h>
+#include <root/TF1.h>
+#include <root/TH1F.h>
+#include <root/TRandom.h>
+#include <root/TMath.h>
+
 class Nucleon {
 public:
-    int charge;
-    double mass;
-    double position[3];   
-    Nucleon(int ch, double m, double x, double y, double z) : charge(ch), mass(m) {
+    Int_t charge;
+    Double_t mass;
+    Double_t position[3];   
+    Nucleon(Int_t ch, Double_t m, Double_t x, Double_t y, Double_t z) : charge(ch), mass(m) {
         position[0] = x;
         position[1] = y;
         position[2] = z;
     }
-
-
 };
 
 class Nucleus {
 public:
     vector<Nucleon> nucleons;
-    int charge;
-    double mass;
-    double R;
-    double r0, V0, a, beta2, beta4;
-    Nucleus(int ch, double m, double r0, double V0, double a, double b2, double b4)
-        : charge(ch), mass(m), r0(r0), V0(V0), a(a), beta2(b2), beta4(b4) {
+    Int_t charge;
+    Double_t mass;
+    Double_t R;
+    Double_t r0, V0, a, beta2, beta4;
+    Double_t position[3];
+    Nucleus(int ch, Double_t m, Double_t r0, Double_t V0, Double_t a, Double_t b2, Double_t b4, Double_t x=0, Double_t y=0, Double_t z=0)
+        : charge(ch), mass(m), r0(r0), V0(V0), a(a), beta2(b2), beta4(b4), position{x, y, z} {
         R = r0 * pow(mass, 1.0/3.0);
         // Генерация нуклонов 
-        int max_attempts = 100000; 
-        for(int i = 0; i < max_attempts; i++){
+        Int_t max_attempts = 100000;
+        TF1* ws_density = new TF1("ws_density", "[0]/(1+exp((x-[1])/[2]))", 0, 2*R);
+
+        Double_t rho0 = 1;
+        ws_density->SetParameters(rho0, R, a);
+        Double_t integral = ws_density->Integral(0, R);
+        rho0 /= integral;
+        ws_density->SetParameters(rho0, R, a);
+
+        for(Int_t i = 0; i < mass; i++){
             if (nucleons.size() >= mass) break;
-            
+            Double_t R = ws_density->GetRandom();
+            Double_t theta = gRandom->Uniform(0, TMath::Pi());
+            Double_t phi = gRandom->Uniform(0, 2 * TMath::Pi());
+            Double_t x = R * TMath::Sin(theta) * TMath::Cos(phi);
+            Double_t y = R * TMath::Sin(theta) * TMath::Sin(phi);
+            Double_t z = R * TMath::Cos(theta);
+            Int_t nucleon_charge = (i < charge) ? 1 : 0; // Протоны и нейтроны
+            nucleons.push_back(Nucleon(nucleon_charge, 1.0, x+position[0], y+position[1], z+position[2]));
         }
-        }
+    }
 };
 
 class Ferrum : public Nucleus {
 public:
-    Ferrum() : Nucleus(26, 56.0, 1.25, 51.0, 0.535, 0.0, 0.0) {
-        
-        for (int i = 0; i < 56; ++i) {
-            int nucleon_charge = (i < 26) ? 1 : 0; // Протоны и нейтроны
-            double nucleon_mass = 1.0; // Упрощенное значение массы
-            double x = static_cast<double>(rand()) / RAND_MAX * R;
-            double y = static_cast<double>(rand()) / RAND_MAX * R;
-            double z = static_cast<double>(rand()) / RAND_MAX * R;
-            nucleons.emplace_back(nucleon_charge, nucleon_mass, x, y, z);
-        }
-    }
+    Ferrum(Double_t x = 0, Double_t y = 0, Double_t z = 0) : Nucleus(26, 56.0, 1.25, 51.0, 0.535, 0.0, 0.0, x, y, z) {}
 };
 int main() {
-    // Nucleus Ferrum(26, 56.0, 4.8, 1.25, 51.0, 0.535, 0.0, 0.0);
+    const Double_t r0 = 1.25;
+    const Double_t mass = 56.0;
+    const Double_t R = r0 * pow(mass, 1.0/3.0);
+    for(Int_t i = 0; i < ATTEMPTS; i++){
+        Double_t distance = gRandom->Uniform(0, 2*R);
+        Ferrum nucleus1;
+        Ferrum nucleus2;
+        nucleus2.position[0] = distance;
+        Int_t count_overlap_n1 = 0;
+        for(auto n : nucleus1.nucleons){
+        /*
+        n1 in nucleus2 -> (x - x2)^2 + (y - y2)^2 + (z - z2)^2 <= R^2
+        */
+            if(pow(n.position[0] - nucleus2.position[0], 2) +
+               pow(n.position[1] - nucleus2.position[1], 2) +
+               pow(n.position[2] - nucleus2.position[2], 2) <= pow(R, 2)){
+                count_overlap_n1++;
+            }
+        }
+        Int_t count_overlap_n2 = 0;
+        for(auto n : nucleus2.nucleons){
+            if(pow(n.position[0] - nucleus1.position[0], 2) +
+               pow(n.position[1] - nucleus1.position[1], 2) +
+               pow(n.position[2] - nucleus1.position[2], 2) <= pow(R, 2)){
+                count_overlap_n2++;
+            }
+        }
+    }
 
     return 0;
 }
