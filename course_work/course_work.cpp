@@ -25,7 +25,7 @@
 #include <vector>
 #include <cmath>
 using namespace std;
-#define ATTEMPTS 1000
+#define ATTEMPTS 10000
 // #define A 56
 // #define Z 26
 // #define N 30
@@ -136,7 +136,7 @@ int main() {
     hist_overlap_n2->Draw("hist same");
 
     TF1 *fit_func = new TF1("fit_func", "[0]*TMath::Gaus(x, [1], [2]) + [3]*TMath::Gaus(x, [4], [5]) + [6]", 0, 112);
-    fit_func->SetParameters(160, 0, 5, 40, 100, 15, 10);
+    fit_func->SetParameters(1600, 0, 5, 400, 100, 15, 100);
     hist_total_overlap->Fit("fit_func", "Q");
     fit_func->SetLineColor(kBlack);
     fit_func->Draw("same");
